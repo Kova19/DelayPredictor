@@ -1,0 +1,16 @@
+# Bachelor thesis FIT VUT
+# Author: Martin Kováčik (xkovacm01)
+# Date: 20.4.2026
+# 
+# Docker compose file for this thesis.
+
+services:
+  lissy-martin-prediction:
+    container_name: lissy-martin-prediction
+    build: .
+    networks:
+      - lissy-network
+networks:
+  lissy-network:
+    name: lissy-network
+    external: true

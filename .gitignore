@@ -1,0 +1,12 @@
+apiFolder/
+.DS_Store
+*.json
+__pycache__
+*.joblib
+trainlogs/*
+models/*
+*.pt
+*.pth
+*.txt
+!requirements.txt
+*.csv
