@@ -10,7 +10,6 @@ import argparse
 import concurrent.futures
 import json
 import os
-import time
 from datetime import datetime, timedelta
 
 import holidays
@@ -22,8 +21,9 @@ from geopy.distance import geodesic
 
 from apiFolder.apiKeys import KEY, VALUE
 from encoding import encode
-from NN.fetchAllWeather import fetchWeatherByDayNewEndpoint
-from NN.fetchStopsCords import getAllStops
+from fetchers.fetchAllWeather import fetchWeatherByDayNewEndpoint
+from fetchers.fetchStopsCords import getAllStops
+from constants.constants import urlRoutes, urlTrips, urlForStops, urlForDelays
 
 linesNormalizer = joblib.load("normalizers/linesNormalizer2.joblib")
 weatherNormalizer = joblib.load("normalizers/weatherNormalizer.joblib")
@@ -31,11 +31,6 @@ weatherNormalizer = joblib.load("normalizers/weatherNormalizer.joblib")
 czechHolidays = holidays.CZ()
 
 headers = {KEY: VALUE}
-
-urlRoutes = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableRoutes"
-urlTrips = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableTrips"
-urlForStops = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShape"
-urlForDelays = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getTripData"
 
 
 # First peak is from 7:00 to 8:30
@@ -105,7 +100,7 @@ def getStopCords(name: str, allStops):
     return None
 
 
-# Get weather for given time and stop
+# Get weather for given time and stop
 def getWeatherForStop(
     stop: str, timeStr: str, weatherStations, weatherForDay, allStops
 ):

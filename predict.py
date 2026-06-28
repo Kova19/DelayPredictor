@@ -13,13 +13,14 @@ from datetime import datetime, timedelta
 import joblib
 import requests
 import torch
-import torch.nn as nn
 
 from apiFolder.apiKeys import KEY, KEYWEATHER, VALUE, BENWEATHER
 from encoding import encodeForPrediction
 from getShapeAndTripID import getShapeAndDelay
-from NN.fetchAllWeather import decodeGroup
-from NN.fetchDelays import firstPeak, isHoliday, secondPeak
+from fetchers.fetchAllWeather import decodeGroup
+from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
+from NN.neuralNetwork import DelayPredictor
+from constants.constants import urlBenWeather, urlForWeather, urlForShape
 
 headers = {KEY: VALUE}
 linesNormalizer = joblib.load("normalizers/linesNormalizer2.joblib")
@@ -27,41 +28,8 @@ weatherNormalizer = joblib.load("normalizers/weatherNormalizer.joblib")
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-urlBenWeather = "https://walter.fit.vutbr.cz/ben/records/openWeather"
-urlForWeather = "https://api.openweathermap.org/data/2.5/forecast"
-urlForShape = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShape"
-urlForDelays = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getTripData"
 
-
-# Neural network architecture for delay prediction
-class DelayPredictor(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.LazyLinear(512),
-            nn.BatchNorm1d(512),
-            nn.SiLU(),
-
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.SiLU(),
-
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.SiLU(),
-
-            nn.Linear(128, 64),
-            nn.BatchNorm1d(64),
-            nn.SiLU(),
-
-            nn.Linear(64, 1),
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-
-# Fetch weather data for given coordinates
+# Fetch weather data for given coordinates
 def fetchWeather(coords):
     try:
         lat, lon = coords
@@ -214,7 +182,7 @@ def predictDelay(data):
 
     model = DelayPredictor().to(device)
     state_dict = torch.load(
-        "./models/delayPredictorModelV12-16.pt", map_location=device, weights_only=True
+        "./models/delayPredictorModelV13.pt", map_location=device, weights_only=True
     )
     model.load_state_dict(state_dict)
     model.eval()

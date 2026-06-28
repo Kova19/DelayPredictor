@@ -13,10 +13,7 @@ import requests
 import json
 
 from apiFolder.apiKeys import KEY, VALUE
-
-urlRoutes = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableRoutes"
-urlTrips = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableTrips"
-urlForStops = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShape"
+from constants.constants import urlRoutes, urlTrips, urlForStops
 
 headers = {KEY: VALUE}
 
@@ -26,6 +23,7 @@ class Transports(TypedDict):
     route: str
     vehicleType: int
     stop: str
+
 
 # Get stops
 def getStops(id: int):

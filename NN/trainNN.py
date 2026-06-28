@@ -14,11 +14,12 @@ import torch
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, TensorDataset
+from NN.neuralNetwork import DelayPredictor
 
 start = time.time()
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-fileName = "delayPredictorModelV12-22.pt"
+fileName = "delayPredictorModelV13.pt"
 
 
 def parse_dataset_day(path: Path) -> datetime:
@@ -32,38 +33,11 @@ def get_dataset_paths():
     dataset_files.sort(key=parse_dataset_day)
     return [str(path) for path in dataset_files]
 
-# Neural network architecture
-class DelayPredictor(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.LazyLinear(512),
-            nn.BatchNorm1d(512),
-            nn.SiLU(),
-
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.SiLU(),
-
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.SiLU(),
-
-            nn.Linear(128, 64),
-            nn.BatchNorm1d(64),
-            nn.SiLU(),
-
-            nn.Linear(64, 1),
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
 
 def log(text, oneLine):
     print(f"{text}", end=", ") if oneLine else print(f"{text}")
     with open(
-        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}22.log",
+        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}.log",
         "a",
         encoding="utf-8",
     ) as f:
@@ -73,7 +47,7 @@ def log(text, oneLine):
 def trainNN():
     files = get_dataset_paths()
     with open(
-        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}22.log",
+        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}.log",
         "w",
         encoding="utf-8",
     ) as f:
@@ -88,7 +62,7 @@ def trainNN():
     log("dataset trained on this days:", False)
 
     if not files:
-        log("No dataset files found in datasetV0/*/dataset.pt", False)
+        log("No dataset files found in dataset/*/dataset.pt", False)
         return
 
     if len(files) < 2:
@@ -135,9 +109,9 @@ def trainNN():
     trainRawDataset = [torch.load(f) for f in trainFiles]
     testRawDataset = [torch.load(f) for f in testFiles]
 
-    total_records = sum(len(ds) for ds in trainRawDataset + testRawDataset)
-    print(total_records)
-    exit(-1)
+    # total_records = sum(len(ds) for ds in trainRawDataset + testRawDataset)
+    # print(total_records)
+    # exit(-1)
 
     trainTensor = torch.cat(trainRawDataset, dim=0).float()
     testTensor = torch.cat(testRawDataset, dim=0).float()

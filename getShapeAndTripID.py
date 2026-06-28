@@ -6,33 +6,30 @@ Date: 20.4.2026
 Script for fetch shape ID and avgDelays for given transport and departure time.
 '''
 
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 
 import requests
 import numpy as np
 from zoneinfo import ZoneInfo
 
 from apiFolder.apiKeys import KEY, VALUE, BENWEATHER
-from NN.fetchDelays import fixDelays
+from constants.constants import urlRoutes, urlTrips, urlForDelays, urlForRealtimeDelays, urlForShapes, urlForShape
+from fetchers.fetchDelays import fixDelays
 from geopy.distance import geodesic
-
-urlForShapes = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getShape"
-urlForRoutes = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableRoutes"
-urlForTrips = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getAvailableTrips"
-urlForDelays = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getTripData"
-urlForRealtimeDelays = "https://walter.fit.vutbr.cz/ben/records/vehiclePositions"
 
 headers = {KEY: VALUE}
 headersBen = {KEY: BENWEATHER}
 
-# Find short name of line
+
+# Find short name of line
 def findLineID(lines, line):
     for lookLine in lines:
         if lookLine["route_short_name"] == line:
             return lookLine["id"], lookLine["route_type"]
     return -1, -1
 
-# Try to find line first try today - 7 else try for 20 days back
+
+# Try to find line first try today - 7 else try for 20 days back
 def findLine(line, predictionDay):
     date = datetime.strptime(predictionDay, "%Y-%m-%d")
     lookupDate = date - timedelta(days=7)
@@ -44,7 +41,7 @@ def findLine(line, predictionDay):
         "dates": f'[["{lookYear}-{lookMonth}-{lookDay}","{lookYear}-{lookMonth}-{lookDay}"]]'
     }
     try:
-        x = requests.get(urlForRoutes, params=params, headers=headers)
+        x = requests.get(urlRoutes, params=params, headers=headers)
         obj = x.json()
 
         lineID, vehicleType = findLineID(obj, line)
@@ -58,7 +55,7 @@ def findLine(line, predictionDay):
                     "dates": f'[["{lookYear}-{lookMonth}-{lookDay}","{lookYear}-{lookMonth}-{lookDay}"]]'
                 }
 
-                x = requests.get(urlForRoutes, params=params, headers=headers)
+                x = requests.get(urlRoutes, params=params, headers=headers)
                 obj = x.json()
                 lineID, vehicleType = findLineID(obj, line)
 
@@ -104,7 +101,7 @@ def findTripID(lineID, depTime, predictionDay, route):
     }
 
     try:
-        x = requests.get(urlForTrips, params=params, headers=headers)
+        x = requests.get(urlTrips, params=params, headers=headers)
         obj = x.json()
 
         tripID, shapeId, benID = findTrip(obj, depTime, route)
@@ -127,7 +124,7 @@ def findTripID(lineID, depTime, predictionDay, route):
                 "route_id": lineID,
             }
 
-            x = requests.get(urlForTrips, params=params, headers=headers)
+            x = requests.get(urlTrips, params=params, headers=headers)
             obj = x.json()
             tripID, shapeId, benID = findTrip(obj, depTime, route)
 
@@ -151,7 +148,7 @@ def countStops(shapeID):
             "shape_id": shapeID
         }
 
-        x = requests.get(urlForShapes, headers=headers, params=params)
+        x = requests.get(urlForShape, headers=headers, params=params)
         obj = x.json()
 
         return len(obj["stops"])
@@ -249,7 +246,7 @@ def getRouteKey(line):
     }
 
     try:
-        x = requests.get(urlForRoutes, headers=headers, params=params)
+        x = requests.get(urlRoutes, headers=headers, params=params)
         obj = x.json()
 
         if obj == {}:
@@ -258,7 +255,7 @@ def getRouteKey(line):
                 params = {
                     "dates": f'[["{lookDay.year}-{lookDay.month - 1}-{lookDay.day}","{lookDay.year}-{lookDay.month - 1}-{lookDay.day}"]]'
                 }
-                x = requests.get(urlForRoutes, headers=headers, params=params)
+                x = requests.get(urlRoutes, headers=headers, params=params)
                 obj = x.json()
                 if obj != {}:
                     break

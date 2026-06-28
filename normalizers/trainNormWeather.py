@@ -6,8 +6,6 @@ Date: 5.3.2026
 Train normalizer for weather data. This normalizer is used to encode the weather for NN
 '''
 
-
-
 import json
 from typing import TypedDict
 
@@ -39,6 +37,7 @@ def loadHistory() -> list[weather]:
     except Exception as e:
         print(f"Error while loading json: {e}")
         exit(-1)
+
 
 # main function for training the normalizer for weather data
 def main():

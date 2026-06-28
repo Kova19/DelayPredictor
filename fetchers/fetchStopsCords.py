@@ -11,14 +11,13 @@ from typing import Tuple, TypedDict
 import requests
 
 from apiFolder.apiKeys import KEY, VALUE
-
-urlForShapes = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShapes"
-urlForShape = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShape"
+from constants.constants import urlForShapes, urlForShape
 
 
 class Stops(TypedDict):
     name: str
     cords: Tuple[float, float]
+
 
 # Main functio for fetching stops
 def getAllStops(dateStr: str):
