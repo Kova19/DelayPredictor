@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 import torch
+import json
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, TensorDataset
@@ -19,7 +20,14 @@ from NN.neuralNetwork import DelayPredictor
 start = time.time()
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-fileName = "delayPredictorModelV13.pt"
+fileName = "delayPredictorModelV15.pt"
+
+
+def getVocabSizes():
+    with open("normalizers/LinesVocab.json", encoding="utf8") as f:
+        linesVocab = json.load(f)
+
+    return {name: len(mapping) for name, mapping in linesVocab.items()}
 
 
 def parse_dataset_day(path: Path) -> datetime:
@@ -81,7 +89,7 @@ def trainNN():
 
     log("---- Start training ----", False)
 
-    model = DelayPredictor().to(device)
+    model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
 
     epochs = 1000
 
@@ -109,20 +117,13 @@ def trainNN():
     trainRawDataset = [torch.load(f) for f in trainFiles]
     testRawDataset = [torch.load(f) for f in testFiles]
 
-    # total_records = sum(len(ds) for ds in trainRawDataset + testRawDataset)
-    # print(total_records)
-    # exit(-1)
+    total_records = sum(len(ds) for ds in trainRawDataset + testRawDataset)
+    log(f"Total sections count: {total_records}", False);
 
     trainTensor = torch.cat(trainRawDataset, dim=0).float()
     testTensor = torch.cat(testRawDataset, dim=0).float()
     del trainRawDataset
     del testRawDataset
-
-    # Last filter for old data not using KF
-    trainTensor = trainTensor[trainTensor[:, -1] <= 100]
-    trainTensor = trainTensor[trainTensor[:, -1] >= -5]
-    testTensor = testTensor[testTensor[:, -1] <= 100]
-    testTensor = testTensor[testTensor[:, -1] >= -5]
 
     if trainTensor.size(0) == 0 or testTensor.size(0) == 0:
         log("Temporal split produced empty train/validation tensor after filtering", False)

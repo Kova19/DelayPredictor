@@ -7,6 +7,7 @@ Encoding script for encoding the data for the neural network.
 '''
 
 import math
+import json
 from typing import Tuple
 
 import numpy as np
@@ -21,6 +22,35 @@ days = {
     "Saturday": 5,
     "Sunday": 6,
 }
+
+
+def toFloatArray(values) -> np.ndarray:
+    return np.asarray(values, dtype=np.float32)
+
+
+def encodeTransport(transport, vocab):
+    return [
+        vocab["line"].get(str(transport["line"]), 0),
+        vocab["route"].get(str(transport["route"]), 0),
+        vocab["vehicleType"].get(str(transport["vehicleType"]), 0),
+        vocab["stop"].get(str(transport["stop"]), 0),
+    ]
+
+
+def normalizeWeather(weather, vocab):
+    out = []
+
+    # Numeric values
+    for field, scaler in vocab["numeric"].items():
+        out.append((
+            weather[field] - scaler["mean"]
+        ) / scaler["std"])
+
+    # Categorical values
+    for field, vocab in vocab["vocabs"].items():
+        out.append(vocab.get(weather[field], 0))
+
+    return out
 
 
 # Encode departure time to sine and cosine values to capture the cyclical nature of time
@@ -45,6 +75,91 @@ def encodeDays(day: int) -> Tuple[float, float]:
     )
 
 
+# Encode the input data
+def newEncode(obj, inference, linesVocab, weatherVocab):
+    try:
+        # Parse input data from object
+        parsedTransport = {
+            "line": obj["transport"]["line"],
+            "route": obj["transport"]["route"],
+            "vehicleType": obj["transport"]["vehicleType"],
+            "stop": obj["transport"]["stop"],
+         }
+
+        parsedWeather = {
+            "temp": obj["weather"]["temp"],
+            "visibility": obj["weather"]["visibility"],
+            "windSpeed": obj["weather"]["windSpeed"],
+            "humidity": obj["weather"]["humidity"],
+            "rain1H": obj["weather"]["rain1H"],
+            "snow1H": obj["weather"]["snow1H"],
+            "group": obj["weather"]["group"]
+        }
+
+        # Normalize the transport data
+        normTransport = encodeTransport(parsedTransport, linesVocab)
+        normWeather = normalizeWeather(parsedWeather, weatherVocab)
+
+        # Convert the parsed data to PyTorch tensors
+        transportDetail = torch.tensor(normTransport, dtype=torch.float32)
+        weather = torch.tensor(normWeather, dtype=torch.float32)
+
+        departureTime = torch.tensor(
+            encodeDepartTime(obj["depTime"]), dtype=torch.float32
+        )
+        dayOfWeek = torch.tensor(
+            encodeDays(days[obj["dayOfWeek"]]), dtype=torch.float32
+        )
+        holiday = torch.tensor([1.0 if obj["holiday"] else 0.0])
+        peakOne = torch.tensor([1.0 if obj["7:00-8:30"] else 0.0])
+        peakTwo = torch.tensor([1.0 if obj["15:30-17:30"] else 0.0])
+
+        stopIndex = torch.tensor([obj["stopIndex"]], dtype=torch.float32)
+        stopCount = torch.tensor([obj["stopsCount"]], dtype=torch.float32)
+
+        prevDelay = torch.tensor([obj["prevDelay"]], dtype=torch.float32)
+        avgDelay = torch.tensor([obj["avgDelay"]], dtype=torch.float32)
+
+        if (inference):
+            return torch.cat(
+                [
+                    transportDetail,
+                    weather,
+                    dayOfWeek,
+                    departureTime,
+                    peakOne,
+                    peakTwo,
+                    stopIndex,
+                    stopCount,
+                    holiday,
+                    prevDelay,
+                    avgDelay,
+                ]
+            )
+        else:
+            delay = torch.tensor([obj["delay"]], dtype=torch.float32)
+            return torch.cat(
+                [
+                    transportDetail,
+                    weather,
+                    dayOfWeek,
+                    departureTime,
+                    peakOne,
+                    peakTwo,
+                    stopIndex,
+                    stopCount,
+                    holiday,
+                    prevDelay,
+                    avgDelay,
+                    delay,
+                ]
+            )
+
+    except Exception as e:
+        print(f"Erro while encoding obj: {e}")
+        return None
+
+
 # Encode the input data
 def encode(obj, linesNormalizer, weatherNormalizer):
     try:
@@ -59,6 +174,7 @@ def encode(obj, linesNormalizer, weatherNormalizer):
             ],
             dtype=object,
         )
+
         tmpWeather = np.array(
             [
                 [
@@ -76,6 +192,7 @@ def encode(obj, linesNormalizer, weatherNormalizer):
 
         normTransport = linesNormalizer.transform(tmpTransport)
         normWeather = weatherNormalizer.transform(tmpWeather)
+
 
         transportDetail = torch.from_numpy(normTransport).float().squeeze()
         departureTime = torch.tensor(
@@ -188,3 +305,38 @@ def encodeForPrediction(obj, linesNormalizer, weatherNormalizer):
         print(f"Erro while encoding obj: {e}")
         print(obj)
         return None
+
+
+def main():
+    obj = {
+        "dayOfWeek": "Friday",
+        "depTime": "06:31:00",
+        "7:00-8:30": False,
+        "15:30-17:30": False,
+        "transport": {
+          "line": "10",
+          "route": "Komín, smyčka -> Novolíšeňská",
+          "vehicleType": 0,
+          "stop": "Vozovna Komín"
+        },
+        "stopIndex": 1,
+        "stopsCount": 22,
+        "weather": {
+          "temp": 279.6,
+          "visibility": 10000,
+          "windSpeed": 0.99,
+          "humidity": 34,
+          "snow1H": 0.0,
+          "rain1H": 0.0,
+          "group": "Clouds"
+        },
+        "holiday": False,
+        "prevDelay": 0,
+        "avgDelay": 0,
+        "delay": 0
+    }
+
+    print(newEncode(obj, False))
+
+if __name__=="__main__":
+    main()

@@ -9,6 +9,7 @@ Fetch script for fetching weather data from the API
 from datetime import datetime
 from typing import Any, TypedDict
 from collections import OrderedDict
+import json
 
 import requests
 
@@ -86,6 +87,30 @@ def parseForFetching(data: Any) -> list[Any]:
 
 
 # Parse weather data for fetching with new endpoint
+def parseForBulkFetchingNewURL(data):
+    try:
+        returnData = []
+        result = {}
+
+        for item in data:
+            result = {
+                "temp": item["main"]["temp"],
+                "visibility": item.get("visibility", 10000),
+                "windSpeed": item["wind"]["speed"],
+                "humidity": item["main"]["humidity"],
+                "snow1H": item.get("snow", {}).get("1h", 0.0),
+                "rain1H": item.get("rain", {}).get("1h", 0.0),
+                "group": item["weather"][0]["main"] if item.get("weather") else None
+            }
+            returnData.append(result)
+
+        #sortedResult = OrderedDict(sorted(result.items(), key=lambda x: x[0]))
+        return returnData
+    except Exception as e:
+        print(f"Error parsing weather data: {e}")
+
+
+# Parse weather data for fetching with new endpoint
 def parseForFetchingNewURL(data):
     try:
         result = {}
@@ -136,3 +161,32 @@ def fetchWeatherByDayNewEndpoint(dayStart):
     except Exception as e:
         print(f"Error while fetching weathet for day {dayStart}: {e}")
 
+
+def main():
+    try:
+        headers = {api_key: ben_weather}
+        allData = []
+
+        with open("./normalizers/weatherHistory.json", "r") as jsonfile:
+            oldData = json.load(jsonfile)
+
+        x = requests.get(urlBenWeather, headers=headers)
+        obj = x.json()
+
+        parsedData = parseForBulkFetchingNewURL(obj)
+
+        for item in oldData:
+            allData.append(item)
+
+        for item in parsedData:
+            allData.append(item)
+
+        with open('./normalizers/NewWeather.json', 'w') as file:
+            print(json.dumps(allData, indent=2, ensure_ascii=False), file=file)
+
+    except Exception as e:
+        print(f"Error while fetching weathet for day: {e}")
+
+
+if __name__ == "__main__":
+    main()

@@ -13,20 +13,22 @@ import os
 from datetime import datetime, timedelta
 
 import holidays
-import joblib
 import numpy as np
 import requests
 import torch
 from geopy.distance import geodesic
 
 from apiFolder.apiKeys import KEY, VALUE
-from encoding import encode
+from encoding import newEncode
 from fetchers.fetchAllWeather import fetchWeatherByDayNewEndpoint
 from fetchers.fetchStopsCords import getAllStops
 from constants.constants import urlRoutes, urlTrips, urlForStops, urlForDelays
 
-linesNormalizer = joblib.load("normalizers/linesNormalizer2.joblib")
-weatherNormalizer = joblib.load("normalizers/weatherNormalizer.joblib")
+with open("normalizers/weatherNormalizer.json", encoding="utf8") as f:
+    weatherVocab = json.load(f)
+
+with open("normalizers/LinesVocab.json", encoding="utf8") as f:
+    linesVocab = json.load(f)
 
 czechHolidays = holidays.CZ()
 
@@ -261,7 +263,6 @@ def getAvgDelays(data, sectionCnt: int):
                 result[i] = np.nan if np.isnan(tmp) else int(tmp)
             i += 1
 
-        #fixedResults = fixDelaysUsingKF(result)
         fixedResults = fixDelays(result)
 
         return fixedResults
@@ -396,10 +397,11 @@ def fetch(fetchDay):
                 continue
 
             tensors = [
-                encode(
+                newEncode(
                     data,
-                    linesNormalizer=linesNormalizer,
-                    weatherNormalizer=weatherNormalizer,
+                    False,
+                    linesVocab,
+                    weatherVocab
                 )
                 for data in fetchData
             ]
