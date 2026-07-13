@@ -10,12 +10,11 @@ import json
 import sys
 from datetime import datetime, timedelta
 
-import joblib
 import requests
 import torch
 
 from apiFolder.apiKeys import KEY, KEYWEATHER, VALUE, BENWEATHER
-from encoding import encodeForPrediction
+from encoding import newEncode
 from getShapeAndTripID import getShapeAndDelay
 from fetchers.fetchAllWeather import decodeGroup
 from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
@@ -23,10 +22,23 @@ from NN.neuralNetwork import DelayPredictor
 from constants.constants import urlBenWeather, urlForWeather, urlForShape
 
 headers = {KEY: VALUE}
-linesNormalizer = joblib.load("normalizers/linesNormalizer2.joblib")
-weatherNormalizer = joblib.load("normalizers/weatherNormalizer.joblib")
+
+
+with open("normalizers/weatherNormalizer.json", encoding="utf8") as f:
+    weatherVocab = json.load(f)
+
+with open("normalizers/LinesVocab.json", encoding="utf8") as f:
+    linesVocab = json.load(f)
+
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
+
+def getVocabSizes():
+    with open("normalizers/LinesVocab.json", encoding="utf8") as f:
+        linesVocab = json.load(f)
+
+    return {name: len(mapping) for name, mapping in linesVocab.items()}
 
 
 # Fetch weather data for given coordinates
@@ -180,9 +192,9 @@ def predictDelay(data):
     if avgDelay == -10:
         return -10
 
-    model = DelayPredictor().to(device)
+    model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
     state_dict = torch.load(
-        "./models/delayPredictorModelV13.pt", map_location=device, weights_only=True
+        "./models/delayPredictorModelV15.pt", map_location=device, weights_only=True
     )
     model.load_state_dict(state_dict)
     model.eval()
@@ -223,8 +235,12 @@ def predictDelay(data):
                 "avgDelay": avgDelay[stopIndex - 1],
             }
 
-            predictTensor = encodeForPrediction(
-                tmp, linesNormalizer, weatherNormalizer)
+            predictTensor = newEncode(
+                    tmp,
+                    True,
+                    linesVocab,
+                    weatherVocab
+                )
 
             X = predictTensor.to(device).unsqueeze(0)
             result = model(X)

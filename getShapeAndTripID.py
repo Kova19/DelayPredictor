@@ -353,7 +353,7 @@ def mapDelays(rawDelays, shapeID):
         "shape_id": shapeID
     }
 
-    x = requests.get(urlForShapes, headers=headers, params=params)
+    x = requests.get(urlForShape, headers=headers, params=params)
     shapeDetail = x.json()
     delays = []
 
