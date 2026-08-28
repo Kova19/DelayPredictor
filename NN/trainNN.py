@@ -9,6 +9,7 @@ Training script for the delay predictor neural network.
 import time
 from datetime import datetime
 from pathlib import Path
+from logger.log import log
 
 import torch
 import json
@@ -20,7 +21,9 @@ from NN.neuralNetwork import DelayPredictor
 start = time.time()
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-fileName = "delayPredictorModelV15.pt"
+logModel = "NeuralNetwork"
+version = "V15.1"
+fileName = f"delayPredictorModel{version}.pt"
 
 
 def getVocabSizes():
@@ -42,52 +45,30 @@ def get_dataset_paths():
     return [str(path) for path in dataset_files]
 
 
-def log(text, oneLine):
-    print(f"{text}", end=", ") if oneLine else print(f"{text}")
-    with open(
-        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}.log",
-        "a",
-        encoding="utf-8",
-    ) as f:
-        print(f"{text}", end=", ", file=f) if oneLine else print(f"{text}", file=f)
-
-
 def trainNN():
     files = get_dataset_paths()
-    with open(
-        f"./trainlogs/trainlog-{datetime.today().strftime("%Y-%m-%d")}.log",
-        "w",
-        encoding="utf-8",
-    ) as f:
-        print("", file=f)
+
+    log("", False, logModel, version, "w")
 
     log(
         f"----- Training log from day: {
             datetime.today().strftime('%d-%m-%Y %H:%M:%S')} -----",
         False,
+        logModel,
+        version
     )
 
-    log("dataset trained on this days:", False)
+    log("dataset trained on this days:", False, logModel, version)
 
     if not files:
-        log("No dataset files found in dataset/*/dataset.pt", False)
+        log("No dataset files found in dataset/*/dataset.pt", False, logModel, version)
         return
 
     if len(files) < 2:
-        log("Need at least 2 dataset days for temporal train/validation split", False)
+        log("Need at least 2 dataset days for temporal train/validation split", False, logModel, version)
         return
 
-    cnt = 1
-    log(Path(files[0]).parent.name, True)
-    for days in files[1:]:
-        log(Path(days).parent.name, True)
-        cnt += 1
-        if cnt % 4 == 0:
-            log("", False)
-    log("\n", False)
-    del cnt
-
-    log("---- Start training ----", False)
+    log("---- Start training ----", False, logModel, version)
 
     model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
 
@@ -108,17 +89,17 @@ def trainNN():
     trainFiles = files[:splitIndex]
     testFiles = files[splitIndex:]
 
-    log("Training days:", False)
-    log(", ".join([Path(path).parent.name for path in trainFiles]), False)
-    log("Validation days (latest):", False)
-    log(", ".join([Path(path).parent.name for path in testFiles]), False)
+    log("Training days:", False, logModel, version)
+    log(", ".join([Path(path).parent.name for path in trainFiles]), False, logModel, version)
+    log("Validation days (latest):", False, logModel, version)
+    log(", ".join([Path(path).parent.name for path in testFiles]), False, logModel, version)
 
     # Load and concat train/test datasets separately to preserve temporal order by day.
     trainRawDataset = [torch.load(f) for f in trainFiles]
     testRawDataset = [torch.load(f) for f in testFiles]
 
     total_records = sum(len(ds) for ds in trainRawDataset + testRawDataset)
-    log(f"Total sections count: {total_records}", False);
+    log(f"Total sections count: {total_records}", False, logModel, version);
 
     trainTensor = torch.cat(trainRawDataset, dim=0).float()
     testTensor = torch.cat(testRawDataset, dim=0).float()
@@ -126,7 +107,7 @@ def trainNN():
     del testRawDataset
 
     if trainTensor.size(0) == 0 or testTensor.size(0) == 0:
-        log("Temporal split produced empty train/validation tensor after filtering", False)
+        log("Temporal split produced empty train/validation tensor after filtering", False, logModel, version)
         return
 
     # X is the input data and y the target value
@@ -198,12 +179,12 @@ def trainNN():
         # update learning rate
         scheduler.step(testMAE)
 
-        log(f"Learning rate is set to {optimizer.param_groups[0]['lr']}", False)
-        log(f"Epoch: {i}, training MSE loss: {trainLoss:.3f}", False)
-        log(f"Epoch: {i}, training MAE loss: {trainMAE:.3f}", False)
-        log(f"Epoch: {i}, testing MSE loss: {testLoss:.3f}", False)
-        log(f"Epoch: {i}, testing MAE loss: {testMAE:.3f}", False)
-        log("", False)
+        log(f"Learning rate is set to {optimizer.param_groups[0]['lr']}", False, logModel, version)
+        log(f"Epoch: {i}, training MSE loss: {trainLoss:.3f}", False, logModel, version)
+        log(f"Epoch: {i}, training MAE loss: {trainMAE:.3f}", False, logModel, version)
+        log(f"Epoch: {i}, testing MSE loss: {testLoss:.3f}", False, logModel, version)
+        log(f"Epoch: {i}, testing MAE loss: {testMAE:.3f}", False, logModel, version)
+        log("", False, logModel, version)
 
         # Primitive earlyStopping
         if testMAE < bestMae:
@@ -218,24 +199,26 @@ def trainNN():
                 f"Early stopping at epoch {
                     i} because of no improvement in the last {patience} epochs",
                 False,
+                logModel,
+                version
             )
             break
 
-    log("---- End training ----", False)
+    log("---- End training ----", False, logModel, version)
 
     try:
         # Save portable weights only (no class/module pickling).
         stateDictCpu = {k: v.detach().cpu() for k, v in bestModel.state_dict().items()}
         torch.save(stateDictCpu, f"./models/{fileName}")
-        log(f"Model saved as {fileName}", False)
+        log(f"Model saved as {fileName}", False, logModel, version)
     except Exception as e:
-        log(f"Error while saving model: {e}", False)
+        log(f"Error while saving model: {e}", False, logModel, version)
 
 
 def main():
     trainNN()
     end = time.time()
-    log(f"Training was running: {((end - start)/60):.2f} minutes", False)
+    log(f"Training was running: {((end - start)/60):.2f} minutes", False, logModel, version)
 
 
 if __name__ == "__main__":

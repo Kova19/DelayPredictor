@@ -1,9 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 21.6.2026
-
-Neural network main class
+Author: Martin Kováčik
 '''
 
 import torch
@@ -11,11 +7,10 @@ import torch.nn as nn
 
 
 class DelayPredictor(nn.Module):
-    def __init__(self, vocab_sizes: dict, embedding_dims: dict = None, n_continuous=18):
+    def __init__(self, vocab_sizes: dict, embedding_dims: dict = None, n_continuous=17):
 
         super().__init__()
 
-        # rozumné výchozí embedding dimenze podle velikosti kategorie
         default_dims = {
             "line": min(16, (vocab_sizes["line"] + 1) // 2),
             "route": min(32, (vocab_sizes["route"] + 1) // 2),
@@ -49,12 +44,12 @@ class DelayPredictor(nn.Module):
         )
 
     def forward(self, x):
-        # x: (batch, 23) -> prvních 4 sloupce jsou kategorické
+        # First 4 are categorical
         line = x[:, 0].long()
         route = x[:, 1].long()
         vehicleType = x[:, 2].long()
         stop = x[:, 3].long()
-        cont_x = x[:, 4:]  # zbylých 19 hodnot
+        cont_x = x[:, 4:]
 
         emb = torch.cat([
             self.emb_line(line),
@@ -66,32 +61,3 @@ class DelayPredictor(nn.Module):
         out = torch.cat([emb, cont_x], dim=1)
         return self.net(out)
 
-'''
-
-class DelayPredictor(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.LazyLinear(512),
-            nn.BatchNorm1d(512),
-            nn.SiLU(),
-
-            nn.Linear(512, 256),
-            nn.BatchNorm1d(256),
-            nn.SiLU(),
-
-            nn.Linear(256, 128),
-            nn.BatchNorm1d(128),
-            nn.SiLU(),
-
-            nn.Linear(128, 64),
-            nn.BatchNorm1d(64),
-            nn.SiLU(),
-
-            nn.Linear(64, 1),
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-'''
