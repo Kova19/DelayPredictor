@@ -7,11 +7,19 @@ Encoding script for encoding the data for the neural network.
 '''
 
 import math
-import json
 from typing import Tuple
+import json
+import traceback
 
 import numpy as np
 import torch
+
+with open("normalizers/weatherNormalizer.json", encoding="utf8") as f:
+    weatherVocab = json.load(f)
+
+with open("normalizers/LinesVocab.json", encoding="utf8") as f:
+    linesVocab = json.load(f)
+
 
 days = {
     "Monday": 0,
@@ -114,8 +122,10 @@ def newEncode(obj, inference, linesVocab, weatherVocab):
         peakOne = torch.tensor([1.0 if obj["7:00-8:30"] else 0.0])
         peakTwo = torch.tensor([1.0 if obj["15:30-17:30"] else 0.0])
 
-        stopIndex = torch.tensor([obj["stopIndex"]], dtype=torch.float32)
-        stopCount = torch.tensor([obj["stopsCount"]], dtype=torch.float32)
+        #stopIndex = torch.tensor([obj["stopIndex"]], dtype=torch.float32)
+        #stopCount = torch.tensor([obj["stopsCount"]], dtype=torch.float32)
+
+        position = torch.tensor([obj["position"]], dtype=torch.float32)
 
         prevDelay = torch.tensor([obj["prevDelay"]], dtype=torch.float32)
         avgDelay = torch.tensor([obj["avgDelay"]], dtype=torch.float32)
@@ -129,8 +139,9 @@ def newEncode(obj, inference, linesVocab, weatherVocab):
                     departureTime,
                     peakOne,
                     peakTwo,
-                    stopIndex,
-                    stopCount,
+#                    stopIndex,
+#                    stopCount,
+                    position,
                     holiday,
                     prevDelay,
                     avgDelay,
@@ -146,8 +157,9 @@ def newEncode(obj, inference, linesVocab, weatherVocab):
                     departureTime,
                     peakOne,
                     peakTwo,
-                    stopIndex,
-                    stopCount,
+#                    stopIndex,
+#                    stopCount,
+                    position,
                     holiday,
                     prevDelay,
                     avgDelay,
@@ -156,12 +168,14 @@ def newEncode(obj, inference, linesVocab, weatherVocab):
             )
 
     except Exception as e:
-        print(f"Erro while encoding obj: {e}")
+        print(f"Error while encoding obj: {e}")
+        traceback.print_exc()
         return None
 
 
 # Encode the input data
 def encode(obj, linesNormalizer, weatherNormalizer):
+
     try:
         tmpTransport = np.array(
             [
@@ -192,7 +206,6 @@ def encode(obj, linesNormalizer, weatherNormalizer):
 
         normTransport = linesNormalizer.transform(tmpTransport)
         normWeather = weatherNormalizer.transform(tmpWeather)
-
 
         transportDetail = torch.from_numpy(normTransport).float().squeeze()
         departureTime = torch.tensor(
@@ -319,8 +332,7 @@ def main():
           "vehicleType": 0,
           "stop": "Vozovna Komín"
         },
-        "stopIndex": 1,
-        "stopsCount": 22,
+        "position": 0.322,
         "weather": {
           "temp": 279.6,
           "visibility": 10000,
@@ -336,7 +348,7 @@ def main():
         "delay": 0
     }
 
-    print(newEncode(obj, False))
+    print(newEncode(obj, False, linesVocab, weatherVocab))
 
 if __name__=="__main__":
     main()

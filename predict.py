@@ -15,7 +15,7 @@ import torch
 
 from apiFolder.apiKeys import KEY, KEYWEATHER, VALUE, BENWEATHER
 from encoding import newEncode
-from getShapeAndTripID import getShapeAndDelay
+from getShapeAndTripID import getShapeAndDelay, getAvgDelayAsPrediction
 from fetchers.fetchAllWeather import decodeGroup
 from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
 from NN.neuralNetwork import DelayPredictor
@@ -149,16 +149,20 @@ def getStopInfo(shapeID: int, stopLook: str):
 
 # Main function to predict delay for given input data
 def predictDelay(data):
-
-    realtimePrediction = -1
-    usedRealtimeData = False
-
     # Parse arguments
     visualize = data["visualization"]
     predictingDate = data["date"]
     predictingDay = datetime.strptime(f"{predictingDate}", "%Y-%m-%d")
     depTime = data["depTime"]
     transport = data["transport"]
+
+    if data["method"] == "avg":
+        shapeID, realTime, delay = getAvgDelayAsPrediction(transport, depTime, predictingDate)
+        return shapeID, realTime, delay
+
+    realtimePrediction = -1
+    usedRealtimeData = False
+
     shapeID, avgDelay, vehicleType, realtimeDelay = getShapeAndDelay(
         transport, depTime, predictingDate)
 
@@ -194,7 +198,7 @@ def predictDelay(data):
 
     model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
     state_dict = torch.load(
-        "./models/delayPredictorModelV15.pt", map_location=device, weights_only=True
+        "./models/delayPredictorModelV15.1.pt", map_location=device, weights_only=True
     )
     model.load_state_dict(state_dict)
     model.eval()
@@ -227,8 +231,7 @@ def predictDelay(data):
                 "7:00-8:30": firstPeak(depTime),
                 "15:30-17:30": secondPeak(depTime),
                 "transport": transportInfo,
-                "stopIndex": stopIndex,
-                "stopsCount": (stopsInfo["stopCount"] - 1),
+                "position": round(stopIndex / (stopsInfo["stopCount"] - 1), 3),
                 "weather": weather,
                 "holiday": isHoliday(predictingDate),
                 "prevDelay": prevDelay,
