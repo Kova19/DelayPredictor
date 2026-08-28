@@ -17,7 +17,7 @@ import numpy as np
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
 
-from traning.fetchAllLines import getAllLinesForNorm
+from training.fetchAllLines import getAllLinesForNorm
 
 
 class Line(TypedDict):

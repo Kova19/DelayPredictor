@@ -19,7 +19,7 @@ from encoding import newEncode
 from getShapeAndTripID import getShapeAndDelay, getAvgDelayAsPrediction
 from fetchers.fetchAllWeather import decodeGroup
 from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
-from traning.neuralNetwork import DelayPredictor
+from training.neuralNetwork import DelayPredictor
 from constants.constants import urlBenWeather, urlForWeather, urlForShape
 
 headers = {KEY: VALUE}
@@ -157,7 +157,7 @@ def predictDelay(data):
     depTime = data["depTime"]
     transport = data["transport"]
 
-    if data["method"] == "avg":
+    if data["method"] == "average":
         shapeID, realTime, delay = getAvgDelayAsPrediction(transport, depTime, predictingDate)
         return shapeID, realTime, delay
 
@@ -197,7 +197,7 @@ def predictDelay(data):
     if avgDelay == -10:
         return -10
 
-    if data["method"] == "nn":
+    if data["method"] == "neuralNetwork":
         model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
         state_dict = torch.load(
             "./models/delayPredictorModelV15.1.pt", map_location=device, weights_only=True
@@ -205,8 +205,11 @@ def predictDelay(data):
         model.load_state_dict(state_dict)
         model.eval()
 
-    if data["method"] == "randForest":
+    if data["method"] == "randomForest":
         model = joblib.load("./models/delayPredictorRandomForestV2.joblib")
+
+    if data["method"] == "linearRegression":
+        model = joblib.load("./models/delayPredictorLRV3.joblib")
 
     individualDelay = -1
     stopIndex = 1
@@ -250,13 +253,13 @@ def predictDelay(data):
                     weatherVocab
                 )
 
-            if data["method"] == "nn":
+            if data["method"] == "neuralNetwork":
                 X = predictTensor.to(device).unsqueeze(0)
                 result = model(X)
                 prevDelay = round(result.item())
                 returnResult = result if realtimeBool else result.item()
 
-            if data["method"] == "randForest":
+            if data["method"] == "randomForest" or data["method"] == "linearRegression":
                 X = predictTensor.to(torch.device("cpu")).unsqueeze(0)
                 predictions = model.predict(X)
                 prevDelay = round(predictions[0])
