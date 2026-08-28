@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 21.4.2026
+Author: Martin Kováčik
 
 Predict script for predicting delays based on the input data.
 '''

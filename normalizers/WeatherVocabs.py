@@ -1,3 +1,7 @@
+'''
+Author: Martin Kováčik
+'''
+
 import json
 
 import math
@@ -33,7 +37,7 @@ def build_numeric_scalers(data):
         variance = sum((x - mean) ** 2 for x in values) / len(values)
         std = math.sqrt(variance)
 
-        # ochrana proti dělení nulou
+        # Handle case where std is zero to avoid division by zero
         if std == 0:
             std = 1.0
 
@@ -72,7 +76,7 @@ def main():
     with open("./normalizers/weatherNormalizerV2.json", "w", encoding="utf-8") as f:
         json.dump(normalizer, f, ensure_ascii=False, indent=2)
 
-    print("Normalizer vytvořen.")
+    print("Normalizer created.")
 
     print("\nNumeric:")
     for name, scaler in normalizer["numeric"].items():

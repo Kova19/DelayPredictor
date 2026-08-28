@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 20.3.2026
+Author: Martin Kováčik
 
 Training script for the delay predictor neural network.
 '''

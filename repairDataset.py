@@ -1,3 +1,9 @@
+'''
+Author: Martin Kováčik
+
+Script for different dataset repair and normalization tasks
+'''
+
 import json
 from pathlib import Path
 from encoding import newEncode

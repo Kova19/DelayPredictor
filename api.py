@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 20.4.2026
+Author: Martin Kováčik
 
 Main API file for the delay predictor. This file contains the FastAPI app and the endpoint for predicting delays.
 '''

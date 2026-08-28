@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 6.4.2026
+Author: Martin Kováčik
 
 Encoding script for encoding the data for the neural network.
 '''

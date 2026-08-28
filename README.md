@@ -1,6 +1,6 @@
 # Delay Predictor for South Moravian Region
 
-__Author:__ Martin Kováčik (xkovacm01)
+__Author:__ Martin Kováčik
 
 ## Instalation
 

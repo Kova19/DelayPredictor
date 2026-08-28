@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 2.3.2026
+Author: Martin Kováčik
 
 Fetch script for fetching delay data from the API and saving it in the dataset folder.
 '''

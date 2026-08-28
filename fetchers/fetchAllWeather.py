@@ -1,7 +1,5 @@
 '''
-Bachelor thesis FIT VUT
-Author: Martin Kováčik (xkovacm01)
-Date: 1.3.2026
+Author: Martin Kováčik
 
 Fetch script for fetching weather data from the API
 '''
