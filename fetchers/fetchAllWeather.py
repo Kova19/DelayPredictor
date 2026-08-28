@@ -167,10 +167,15 @@ def main():
         headers = {api_key: ben_weather}
         allData = []
 
-        with open("./normalizers/weatherHistory.json", "r") as jsonfile:
+        with open("./normalizers/newWeather.json", "r") as jsonfile:
             oldData = json.load(jsonfile)
 
-        x = requests.get(urlBenWeather, headers=headers)
+        params = {
+            "dateFrom": "2026-06-13T00:00:00",
+            "dateTo": "2026-08-26T23:59:59"
+        }
+
+        x = requests.get(urlBenWeather, headers=headers, params=params)
         obj = x.json()
 
         parsedData = parseForBulkFetchingNewURL(obj)

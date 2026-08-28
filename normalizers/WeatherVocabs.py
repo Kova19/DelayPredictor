@@ -69,7 +69,7 @@ def main():
         "vocabs": build_vocabs(data),
     }
 
-    with open("./normalizers/weatherNormalizer.json", "w", encoding="utf-8") as f:
+    with open("./normalizers/weatherNormalizerV2.json", "w", encoding="utf-8") as f:
         json.dump(normalizer, f, ensure_ascii=False, indent=2)
 
     print("Normalizer vytvořen.")

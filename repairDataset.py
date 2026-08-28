@@ -99,12 +99,74 @@ def fixAndLoadDataset(dataset_dir: Path) -> dict:
         torch.save(day_tensor, dataset_dir / day / "dataset.pt")
 
 
+def reworkDataset(dataset_dir: Path) -> dict:
+
+    for day in days:
+        path = dataset_dir / day
+        print(f"Rework dataset for day: {day}")
+
+        print(f"json count before repair: {len(list(path.glob('*.json')))}")
+        dataset = []
+        for json_file in path.glob("*.json"):
+            print(f"Repairing file: {json_file}")
+            with json_file.open("r", encoding="utf-8") as handle:
+                dataForFix = json.load(handle)
+
+            fixedCopy = []
+            for data in dataForFix:
+                if data["delay"] < -5 or data["delay"] > 90:
+                    continue
+                if data["weather"]["visibility"] is None:
+                    fixedWeather = {
+                        "temp": data["weather"]["temp"],
+                        "visibility": 10000,
+                        "windSpeed": data["weather"]["windSpeed"],
+                        "humidity": data["weather"]["humidity"],
+                        "snow1H": data["weather"]["snow1H"],
+                        "rain1H": data["weather"]["rain1H"],
+                        "group": data["weather"]["group"],
+                    }
+
+                record = {
+                    'dayOfWeek': data['dayOfWeek'],
+                    'depTime': data['depTime'],
+                    '7:00-8:30': data['7:00-8:30'],
+                    '15:30-17:30': data['15:30-17:30'],
+                    'transport': data['transport'],
+                    "position": round(float(data['stopIndex']) / float(data['stopsCount']), 3),
+                    'weather': fixedWeather if data["weather"]["visibility"] is None else data['weather'],
+                    'holiday': data['holiday'],
+                    'prevDelay': data['prevDelay'],
+                    'avgDelay': data['avgDelay'],
+                    'delay': data['delay']
+                }
+                fixedCopy.append(record)
+
+            path = Path(json_file)
+            relative_path = "./" + str(Path(*path.parts[path.parts.index("dataset"):]))
+            with open(relative_path, "w", encoding="utf-8",) as f:
+                print(json.dumps(fixedCopy, indent=2, ensure_ascii=False), file=f)
+
+            tensors = [newEncode(data, False, linesVocab, weatherVocab) for data in fixedCopy]
+            tensors = [t for t in tensors if t is not None]
+
+            if tensors:
+                dataset.append(torch.stack(tensors))
+
+        if not dataset:
+            print(f"No valid encoded records for day: {day}, skipping dataset.pt update")
+            continue
+
+        day_tensor = torch.cat(dataset)
+        torch.save(day_tensor, dataset_dir / day / "dataset.pt")
+
+
 # Argument parser
 def parseArguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "-m", "--mode", help="How this script should work 'fix' or 'normalize'", type=str
+        "-m", "--mode", help="How this script should work 'fix', 'normalize' or rework", type=str
     )
 
     return parser.parse_args()
@@ -121,6 +183,8 @@ def main():
         fixAndLoadDataset(DATASET_DIR)
     elif args.mode == "normalize":
         renormalizeDataset(DATASET_DIR)
+    elif args.mode == "rework":
+        reworkDataset(DATASET_DIR)
     else:
         print("Wrong mode")
         return
