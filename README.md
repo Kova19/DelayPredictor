@@ -50,7 +50,7 @@ This script downloads and parses the data, then saves it to the __dataset__ fold
 If the script is run without any arguments, it will download yesterday's data.
 
 ```shell
-python3 -m NN.fetchDelays  -r <date range> -d <days count>
+python3 -m traning.fetchDelays  -r <date range> -d <days count>
 ```
 
 ### Example
@@ -58,7 +58,7 @@ python3 -m NN.fetchDelays  -r <date range> -d <days count>
 With date range:
 
 ```shell
-python3 -m NN.fetchDelays -r "[2026-4-21,2026-4-26]"
+python3 -m traning.fetchDelays -r "[2026-4-21,2026-4-26]"
 ```
 
 ## Train neural network
@@ -66,7 +66,7 @@ python3 -m NN.fetchDelays -r "[2026-4-21,2026-4-26]"
 If the dataset folder contains data for at least two days, you can run the training script using the following command.
 
 ```shell
-python3 -m NN.trainNN
+python3 -m traning.trainNN
 ```
 
 ## Prediction

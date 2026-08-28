@@ -9,6 +9,7 @@ Predict script for predicting delays based on the input data.
 import json
 import sys
 from datetime import datetime, timedelta
+import joblib
 
 import requests
 import torch
@@ -18,7 +19,7 @@ from encoding import newEncode
 from getShapeAndTripID import getShapeAndDelay, getAvgDelayAsPrediction
 from fetchers.fetchAllWeather import decodeGroup
 from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
-from NN.neuralNetwork import DelayPredictor
+from traning.neuralNetwork import DelayPredictor
 from constants.constants import urlBenWeather, urlForWeather, urlForShape
 
 headers = {KEY: VALUE}
@@ -196,12 +197,16 @@ def predictDelay(data):
     if avgDelay == -10:
         return -10
 
-    model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
-    state_dict = torch.load(
-        "./models/delayPredictorModelV15.1.pt", map_location=device, weights_only=True
-    )
-    model.load_state_dict(state_dict)
-    model.eval()
+    if data["method"] == "nn":
+        model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
+        state_dict = torch.load(
+            "./models/delayPredictorModelV15.1.pt", map_location=device, weights_only=True
+        )
+        model.load_state_dict(state_dict)
+        model.eval()
+
+    if data["method"] == "randForest":
+        model = joblib.load("./models/delayPredictorRandomForestV2.joblib")
 
     individualDelay = -1
     stopIndex = 1
@@ -245,11 +250,17 @@ def predictDelay(data):
                     weatherVocab
                 )
 
-            X = predictTensor.to(device).unsqueeze(0)
-            result = model(X)
-            prevDelay = round(result.item())
+            if data["method"] == "nn":
+                X = predictTensor.to(device).unsqueeze(0)
+                result = model(X)
+                prevDelay = round(result.item())
+                returnResult = result if realtimeBool else result.item()
 
-        returnResult = result if realtimeBool else result.item()
+            if data["method"] == "randForest":
+                X = predictTensor.to(torch.device("cpu")).unsqueeze(0)
+                predictions = model.predict(X)
+                prevDelay = round(predictions[0])
+                returnResult = predictions[0]
 
         if visualize:
             delay[str(stopIndex - 1)] = round(returnResult)

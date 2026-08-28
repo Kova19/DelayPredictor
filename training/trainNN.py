@@ -16,7 +16,7 @@ import json
 import torch.nn as nn
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader, TensorDataset
-from NN.neuralNetwork import DelayPredictor
+from traning.neuralNetwork import DelayPredictor
 
 start = time.time()
 

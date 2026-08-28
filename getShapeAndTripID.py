@@ -11,7 +11,7 @@ import numpy as np
 from zoneinfo import ZoneInfo
 
 from apiFolder.apiKeys import KEY, VALUE, BENWEATHER
-from constants.constants import urlRoutes, urlTrips, urlForDelays, urlForRealtimeDelays, urlForShape, urlForAvgDelays
+from constants.constants import urlForRealtimeDelays, urlForShape, urlForAvgDelays
 from fetchers.fetchDelays import fixDelays
 from geopy.distance import geodesic
 
