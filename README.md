@@ -73,12 +73,29 @@ python3 -m training.trainNN
 
 The predict.py script is used for prediction and accepts the following string:
 
-__'{"visualization": boolean,"date": string date,"depTime": string time,"transport": {"line": line number,"route": route}}'__
+__'{"visualization": boolean,"method": string method "date": string date,"depTime": string time,"transport": {"line": line number,"route": route string, "stop": optional stop name string}}'__
+
+
+If you set the `visualization` parameter to `false`, the `stop` parameter must be included in the `transport` object; otherwise, the `stop` parameter is not mandatory.
+
+### Available methods
+- **average** - for the mathematical average delay over 8 weeks
+- **linearRegression** - for the linear regression method
+- **randomForest** - for the random forest method
+- **neuralNetwork** - for the neural network method
 
 ### Example
 
+#### Visualization true example
+
 ```shell
-python3 predict.py '{"visualization": true,"date": "2026-4-30","depTime": "12:21:00","transport": {"line": "1","route": "Řečkovice -> Rakovecká"}}'
+python3 predict.py '{"visualization": true, "method": "neuralNetwork", "date": "2026-4-30","depTime": "12:21:00","transport": {"line": "1","route": "Řečkovice -> Rakovecká"}}'
+```
+
+#### Visualization false example
+
+```shell
+python3 predict.py '{"visualization": false, "method": "neuralNetwork", "date": "2026-4-30","depTime": "12:21:00","transport": {"line": "1","route": "Řečkovice -> Rakovecká", "stop": "Tylova"}}'
 ```
 
 Alternatively, you can run the predictor as an API using __uvicorn__
@@ -89,9 +106,27 @@ uvicorn api:app
 
 You can then send a POST request to ```http://127.0.0.1:8000/predict``` with the route request in the following format:
 
+#### Visualization true example
+
+```json
+{
+    "visualization": true,
+    "method": "neuralNetwork",
+    "date": "2026-4-30",
+    "depTime": "12:21:00",
+    "transport": {
+        "line": "1",
+        "route": "Řečkovice -> Rakovecká",
+    }
+}
+```
+
+#### Visualization false example
+
 ```json
 {
     "visualization": false,
+    "method": "randomForest",
     "date": "2026-4-30",
     "depTime": "12:21:00",
     "transport": {
