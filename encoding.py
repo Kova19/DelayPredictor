@@ -314,7 +314,6 @@ def encodeForPrediction(obj, linesNormalizer, weatherNormalizer):
 
     except Exception as e:
         print(f"Erro while encoding obj: {e}")
-        print(obj)
         return None
 
 

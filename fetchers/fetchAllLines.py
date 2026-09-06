@@ -88,7 +88,6 @@ def getAllLinesForNorm():
 
     for i in range(1, 8):
         date = datetime.today() - timedelta(days=i)
-        print(date)
 
         year = date.year
         month = date.month - 1

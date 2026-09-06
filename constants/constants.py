@@ -12,6 +12,7 @@ urlForShapes = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShapes"
 urlForShape = "https://dexter.fit.vutbr.cz/lissy/api/shapes/getShape"
 urlForAvgDelays = "https://dexter.fit.vutbr.cz/lissy/api/delayTrips/getTripDataInRange"
 urlForRealtimeDelays = "https://walter.fit.vutbr.cz/ben/records/vehiclePositions"
+urlForRandomDelays = "https://dexter.fit.vutbr.cz/lissy/api/prediction/getRandomTrips"
 
 urlBenWeather = "https://walter.fit.vutbr.cz/ben/records/openWeather"
 urlForWeather = "https://api.openweathermap.org/data/2.5/forecast"

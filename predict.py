@@ -16,7 +16,7 @@ from apiFolder.apiKeys import KEY, KEYWEATHER, VALUE, BENWEATHER
 from encoding import newEncode
 from getShapeAndTripID import getShapeAndDelay, getAvgDelayAsPrediction
 from fetchers.fetchAllWeather import decodeGroup
-from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak
+from fetchers.fetchDelays import firstPeak, isHoliday, secondPeak, getWeatherForStop
 from training.neuralNetwork import DelayPredictor
 from constants.constants import urlBenWeather, urlForWeather, urlForShape
 
@@ -147,7 +147,7 @@ def getStopInfo(shapeID: int, stopLook: str):
 
 
 # Main function to predict delay for given input data
-def predictDelay(data):
+def predictDelay(data, weatherFromCall=None, stations=None):
     # Parse arguments
     visualize = data["visualization"]
     predictingDate = data["date"]
@@ -165,9 +165,9 @@ def predictDelay(data):
     shapeID, avgDelay, vehicleType, realtimeDelay = getShapeAndDelay(
         transport, depTime, predictingDate)
 
-    if all(v == -1 for v in (shapeID, avgDelay, vehicleType, realtimeDelay)):
+    if all(v == -1 for v in (shapeID, avgDelay, vehicleType)):
         return -1, -1, -1
-    if all(v == -2 for v in (shapeID, avgDelay, vehicleType, realtimeDelay)):
+    if all(v == -2 for v in (shapeID, avgDelay, vehicleType)):
         return -2, -2, -2
 
     if avgDelay == -10:
@@ -189,8 +189,12 @@ def predictDelay(data):
     stopsInfo, stopCoords = getStopInfo(shapeID, predictionStop)
 
     destMeteo = findNearMeteoStat(stopCoords)
-    weatherRaw = fetchWeather(destMeteo)
-    weather = findBestTime(weatherRaw, predictingDate, depTime)
+    if weatherFromCall is None:
+        weatherRaw = fetchWeather(destMeteo)
+        weather = findBestTime(weatherRaw, predictingDate, depTime)
+    else:
+        weatherRaw = weatherFromCall
+        weather = getWeatherForStop(timeStr=depTime, weatherStations=stations, weatherForDay=weatherRaw, stopCords=stopCoords)
 
     if avgDelay == -10:
         return -10

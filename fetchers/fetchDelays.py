@@ -102,10 +102,11 @@ def getStopCords(name: str, allStops):
 
 # Get weather for given time and stop
 def getWeatherForStop(
-    stop: str, timeStr: str, weatherStations, weatherForDay, allStops
+    stop=None, timeStr=None, weatherStations=None, weatherForDay=None, allStops=None, stopCords=None
 ):
     try:
-        stopCords = getStopCords(stop, allStops)
+        if stopCords is None:
+            stopCords = getStopCords(stop, allStops)
         bestId = 0  # 0 for fallback if there is no station or stop coords
         bestMetrs = float("inf")
 

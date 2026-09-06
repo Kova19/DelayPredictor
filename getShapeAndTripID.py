@@ -243,8 +243,10 @@ def getDataAboutTransport(transport, depTime, predictionDay, avgDelay):
     fetchedDelays = x.json()
 
     if fetchedDelays == []:
-        return -1, -1, -1, -1, -1
-
+        if avgDelay:
+            return -1, -1, -1
+        else:
+            return -1, -1, -1, -1, -1
     # Get shape ID for stop count and vehicleType
     shapeID = fetchedDelays["shape_id"]
 
@@ -254,8 +256,12 @@ def getDataAboutTransport(transport, depTime, predictionDay, avgDelay):
 
     rawDelays = []
 
-    kordisID = fetchedDelays["kordis_id"]
-    lineID, benID = kordisID.split("/")
+    # kordisID = fetchedDelays["kordis_id"]
+    kordisID = fetchedDelays.get("kordis_id")
+    if kordisID is not None:
+        lineID, benID = kordisID.split("/")
+    else:
+        lineID, benID = 0, 0
 
     # for delay in fetchedDelays:
     for date, values in fetchedDelays["data"].items():
