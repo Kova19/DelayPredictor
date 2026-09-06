@@ -1,3 +1,7 @@
+'''
+Author: Martin Kováčik
+'''
+
 import json
 import os
 

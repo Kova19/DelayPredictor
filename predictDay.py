@@ -18,9 +18,9 @@ def getPrediction(data, method, date):
 
     returnObj = []
     i = 0
-    for transport in data:
+    for transport in data["trips"]:
         i += 1
-        print(f"Predicting {i} of {len(data)}")
+        print(f"Predicting {i} of {data["stats"]["number_of_trips"]}")
         predictObj = {
             "visualization": True,
             "date": date,
