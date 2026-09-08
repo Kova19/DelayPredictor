@@ -29,7 +29,6 @@ with open("normalizers/weatherNormalizer.json", encoding="utf8") as f:
 with open("normalizers/LinesVocab.json", encoding="utf8") as f:
     linesVocab = json.load(f)
 
-
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 
@@ -170,7 +169,7 @@ def predictDelay(data, weatherFromCall=None, stations=None):
     if all(v == -2 for v in (shapeID, avgDelay, vehicleType)):
         return -2, -2, -2
 
-    if avgDelay == -10:
+    if avgDelay == -10 or avgDelay == {}:
         return -3, -3, -3
 
     realtimePrediction = len(realtimeDelay) if realtimeDelay is not None else 0
@@ -278,6 +277,217 @@ def predictDelay(data, weatherFromCall=None, stations=None):
     else:
         return individualDelay
 
+
+def predictDelayAllMethods(data, weatherFromCall=None, stations=None):
+    predictingDate = data["date"]
+    predictingDay = datetime.strptime(predictingDate, "%Y-%m-%d")
+    depTime = data["depTime"]
+    transport = data["transport"]
+
+    # Average delay prediction
+    _, _, avgDelayResult = getAvgDelayAsPrediction(
+        transport,
+        depTime,
+        predictingDate
+    )
+
+    # SharedData
+    shapeID, avgDelay, vehicleType, realtimeDelay = getShapeAndDelay(
+        transport,
+        depTime,
+        predictingDate
+    )
+
+    if all(v == -1 for v in (shapeID, avgDelay, vehicleType)):
+        return -1, -1, -1, -1
+
+    if all(v == -2 for v in (shapeID, avgDelay, vehicleType)):
+        return -2, -2, -2, -2
+
+    if avgDelay == -10 or avgDelay == {}:
+        return -3, -3, -3, -3
+
+    realtimePrediction = len(realtimeDelay) if realtimeDelay else 0
+
+    # Start stop
+    if transport.get("stop") is None:
+        predictionStop = transport["route"].split("->")[0].strip()
+    else:
+        predictionStop = transport["stop"]
+
+    # Stop info and coordinates + weather
+    stopsInfo, stopCoords = getStopInfo(
+        shapeID,
+        predictionStop
+    )
+
+    destMeteo = findNearMeteoStat(stopCoords)
+
+    if weatherFromCall is None:
+        weatherRaw = fetchWeather(destMeteo)
+
+        weather = findBestTime(
+            weatherRaw,
+            predictingDate,
+            depTime
+        )
+    else:
+        weather = getWeatherForStop(
+            timeStr=depTime,
+            weatherStations=stations,
+            weatherForDay=weatherFromCall,
+            stopCords=stopCoords
+        )
+
+    # Load models
+    neuralModel = DelayPredictor(
+        vocab_sizes=getVocabSizes()
+    ).to(device)
+
+    state_dict = torch.load(
+        "./models/delayPredictorModelV15.1.pt",
+        map_location=device,
+        weights_only=True
+    )
+
+    neuralModel.load_state_dict(state_dict)
+    neuralModel.eval()
+
+    randomForestModel = joblib.load(
+        "./models/delayPredictorRandomForestV2.joblib"
+    )
+
+    linearRegressionModel = joblib.load(
+        "./models/delayPredictorLRV3.joblib"
+    )
+
+    # Results
+    neuralNetwork = {}
+    linearRegression = {}
+    randomForest = {}
+
+    # Previous delay is independent for every model
+    prevDelayNN = 0
+    prevDelayLR = 0
+    prevDelayRF = 0
+
+    # Predict for every stop
+    stopIndex = 1
+
+    for stop in stopsInfo["stops"][1:]:
+
+        # RealTime data
+        if realtimePrediction > 0:
+
+            result = realtimeDelay[stopIndex - 1]
+
+            nnResult = result
+            lrResult = result
+            rfResult = result
+
+            prevDelayNN = result
+            prevDelayLR = result
+            prevDelayRF = result
+
+            realtimePrediction -= 1
+
+        # No realTime data, predict with models
+        else:
+
+            transportInfo = {
+                "line": transport["line"],
+                "route": transport["route"],
+                "vehicleType": vehicleType,
+                "stop": stop,
+            }
+
+            baseTmp = {
+                "dayOfWeek": predictingDay.strftime("%A"),
+                "depTime": depTime,
+                "7:00-8:30": firstPeak(depTime),
+                "15:30-17:30": secondPeak(depTime),
+                "transport": transportInfo,
+                "position": round(
+                    stopIndex / (stopsInfo["stopCount"] - 1),
+                    3
+                ),
+                "weather": weather,
+                "holiday": isHoliday(predictingDate),
+                "avgDelay": avgDelay[stopIndex - 1],
+            }
+
+            # neural network
+            tmp = baseTmp.copy()
+            tmp["prevDelay"] = prevDelayNN
+
+            tensorNN = newEncode(
+                tmp,
+                True,
+                linesVocab,
+                weatherVocab
+            )
+
+            with torch.no_grad():
+                nnResult = round(
+                    neuralModel(
+                        tensorNN.to(device).unsqueeze(0)
+                    ).item()
+                )
+
+            prevDelayNN = nnResult
+
+            # Linear Regression
+            tmp = baseTmp.copy()
+            tmp["prevDelay"] = prevDelayLR
+
+            tensorLR = newEncode(
+                tmp,
+                True,
+                linesVocab,
+                weatherVocab
+            )
+
+            lrResult = round(
+                linearRegressionModel.predict(
+                    tensorLR.to(torch.device("cpu")).unsqueeze(0)
+                )[0]
+            )
+
+            prevDelayLR = lrResult
+
+            # Random Forest
+            tmp = baseTmp.copy()
+            tmp["prevDelay"] = prevDelayRF
+
+            tensorRF = newEncode(
+                tmp,
+                True,
+                linesVocab,
+                weatherVocab
+            )
+
+            rfResult = round(
+                randomForestModel.predict(
+                    tensorRF.to(torch.device("cpu")).unsqueeze(0)
+                )[0]
+            )
+
+            prevDelayRF = rfResult
+
+        # Store results
+        neuralNetwork[str(stopIndex - 1)] = nnResult
+        linearRegression[str(stopIndex - 1)] = lrResult
+        randomForest[str(stopIndex - 1)] = rfResult
+
+        stopIndex += 1
+
+    # Return results
+    return (
+        avgDelayResult,
+        neuralNetwork,
+        linearRegression,
+        randomForest
+    )
 
 def main():
     inputArgs = json.loads(sys.argv[1])

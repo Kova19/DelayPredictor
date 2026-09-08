@@ -18,7 +18,7 @@ def predict(data: dict):
             if all(v == -1 for v in (shape, realtime, prediction)):
                 return {"code": 501, "error": "Predictor did not found line ID for route"}
             if all(v == -2 for v in (shape, realtime, prediction)):
-                return {"code": 502, "error": "Predictor did not found tripID for prection"}
+                return {"code": 502, "error": "Predictor did not found tripID for prediction"}
             if all(v == -3 for v in (shape, realtime, prediction)):
                 return {"code": 503, "error": "Predictor did not found average delays for trip"}
 
