@@ -97,12 +97,16 @@ def getPrediction(data, date):
     totalTrips = len(data)
     results = [None] * len(transports)
 
+    date = datetime.strptime(date, "%Y-%m-%d")
+    date = date.replace(month=date.month + 1)
+    nonJsDate = date.strftime("%Y-%-m-%-d")
+
     with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         futures = {
             executor.submit(
                 predictTransport,
                 transport,
-                date,
+                nonJsDate,
                 weather,
                 weatherStations,
             ): index
@@ -158,6 +162,9 @@ def getRandomTransports(date):
     with open(f"./simulations/{date}-randomForest.json", "w", encoding="utf-8") as f:
         print(json.dumps(randomForest, indent=2, ensure_ascii=False), file=f)
 
+    with open(f"./simulations/stats.txt", "a", encoding="utf-8") as f:
+        print(f"\nJSDate - {date}, number of all trips - {fetchedDelays["stats"]["number_of_trips"]}, used for prediction - {len(delays)}, prediction was successful for {len(avgDelay)}", file=f)
+
 
 # Argument parser
 def parseArguments():
@@ -169,10 +176,11 @@ def parseArguments():
 
 
 def main():
-    args = parseArguments()
-
-    getRandomTransports(args.days)
-
+    # "2026-7-1"
+    daysForPredict = ["2026-7-17", "2026-7-4", "2026-7-19", "2026-7-20", "2026-7-24", "2026-7-16", "2026-7-7", "2026-7-28", "2026-7-26"]
+    #args = parseArguments()
+    for day in daysForPredict:
+        getRandomTransports(day)
 
 if __name__ == "__main__":
     main()
