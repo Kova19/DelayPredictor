@@ -240,7 +240,10 @@ def getDataAboutTransport(transport, depTime, predictionDay, avgDelay):
     }
 
     x = requests.get(urlForAvgDelays, headers=headers, params=params)
+    print(x.url)
     fetchedDelays = x.json()
+
+    print(fetchedDelays)
 
     if fetchedDelays == []:
         if avgDelay:
@@ -285,6 +288,7 @@ def getAvgDelayAsPrediction(transport, depTime, predictionDay):
 # Main function to get shapeID, avgDelay, vehicleType and realtime delays for given transport and departure time
 def getShapeAndDelay(transport, depTime, predictionDay):
     returnShapeID, avgDelays, vehicleType, benID, lineID = getDataAboutTransport(transport, depTime, predictionDay, False)
+    print(f"{returnShapeID}, {avgDelays}, {vehicleType}, {benID}, {lineID}")
 
     rawDelays = []
 

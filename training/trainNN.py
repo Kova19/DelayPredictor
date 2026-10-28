@@ -20,7 +20,7 @@ start = time.time()
 
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 logModel = "NeuralNetwork"
-version = "V15.1"
+version = "V15.2"
 fileName = f"delayPredictorModel{version}.pt"
 
 

@@ -201,16 +201,16 @@ def predictDelay(data, weatherFromCall=None, stations=None):
     if data["method"] == "neuralNetwork":
         model = DelayPredictor(vocab_sizes=getVocabSizes()).to(device)
         state_dict = torch.load(
-            "./models/delayPredictorModelV15.1.pt", map_location=device, weights_only=True
+            "./models/delayPredictorModelV15.2.pt", map_location=device, weights_only=True
         )
         model.load_state_dict(state_dict)
         model.eval()
 
     if data["method"] == "randomForest":
-        model = joblib.load("./models/delayPredictorRandomForestV2.joblib")
+        model = joblib.load("./models/delayPredictorRandomForestV2.1.joblib")
 
     if data["method"] == "linearRegression":
-        model = joblib.load("./models/delayPredictorLRV3.joblib")
+        model = joblib.load("./models/delayPredictorLRV3.1.joblib")
 
     individualDelay = -1
     stopIndex = 1

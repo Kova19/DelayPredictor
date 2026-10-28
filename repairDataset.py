@@ -172,7 +172,7 @@ def parseArguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "-m", "--mode", help="How this script should work 'fix', 'normalize' or rework", type=str
+        "-m", "--mode", help="How this script should work 'fix', 'normalize' or 'rework", type=str
     )
 
     return parser.parse_args()

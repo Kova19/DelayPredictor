@@ -85,9 +85,9 @@ def getAvailableRoutes(datesParam):
 # Get all lines for training the normalizer
 def getAllLinesForNorm():
     transports: list[Transports] = []
-
+    today = datetime.today()
     for i in range(1, 8):
-        date = datetime.today() - timedelta(days=i)
+        date = today - timedelta(days=i)
 
         year = date.year
         month = date.month - 1
@@ -95,6 +95,7 @@ def getAllLinesForNorm():
 
         datesParam = f'[["{year}-{month}-{day}","{year}-{month}-{day}"]]'
 
+        print(datesParam)
         newRecords = getAvailableRoutes(datesParam)
 
     transports = list({

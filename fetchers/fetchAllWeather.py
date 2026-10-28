@@ -169,8 +169,8 @@ def main():
             oldData = json.load(jsonfile)
 
         params = {
-            "dateFrom": "2026-06-13T00:00:00",
-            "dateTo": "2026-08-26T23:59:59"
+            "dateFrom": "2026-08-27T00:00:00",
+            "dateTo": "2026-10-26T23:59:59"
         }
 
         x = requests.get(urlBenWeather, headers=headers, params=params)

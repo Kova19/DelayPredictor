@@ -19,7 +19,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 start = time.time()
 
 logModel = "RandomForest"
-version = "V2"
+version = "V2.1"
 
 fileName = f"delayPredictorRandomForest{version}.joblib"
 

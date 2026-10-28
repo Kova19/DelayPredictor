@@ -15,7 +15,7 @@ import joblib
 
 start = time.time()
 
-version = "V3"
+version = "V3.1"
 logModel = "LinearRegression"
 fileName = f"delayPredictorLR{version}.joblib"
 
